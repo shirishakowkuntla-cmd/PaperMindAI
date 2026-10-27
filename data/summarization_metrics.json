@@ -1,0 +1,35 @@
+{
+    "average_rouge1_f1": 0.832,
+    "average_rouge2_f1": 0.8184,
+    "average_rougeL_f1": 0.832,
+    "evaluated_papers_count": 3,
+    "detailed_results": [
+        {
+            "paper": "Attention / Transformer Architecture",
+            "filename": "sample_attention_transformer.pdf",
+            "rouge1_f1": 0.8182,
+            "rouge2_f1": 0.8046,
+            "rougeL_f1": 0.8182,
+            "reference_abstract_length": 103,
+            "summary_length": 71
+        },
+        {
+            "paper": "Deep Residual Learning (ResNet)",
+            "filename": "sample_resnet_computer_vision.pdf",
+            "rouge1_f1": 0.8098,
+            "rouge2_f1": 0.795,
+            "rougeL_f1": 0.8098,
+            "reference_abstract_length": 96,
+            "summary_length": 65
+        },
+        {
+            "paper": "CyberGuard Phishing Detection",
+            "filename": "sample_phishing_detection_cybersecurity.pdf",
+            "rouge1_f1": 0.8681,
+            "rouge2_f1": 0.8556,
+            "rougeL_f1": 0.8681,
+            "reference_abstract_length": 95,
+            "summary_length": 74
+        }
+    ]
+}
