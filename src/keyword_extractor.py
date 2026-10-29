@@ -5,6 +5,7 @@ Extracts unigram, bigram, and trigram keyphrases using TF-IDF and syntactic heur
 
 import re
 from typing import List, Dict, Tuple
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 
@@ -14,7 +15,10 @@ ACADEMIC_STOPWORDS = {
     "based", "data", "model", "models", "presents", "show", "shows", "author", "authors", "work",
     "et", "al", "figure", "table", "section", "demonstrate", "demonstrates", "evaluated", "performance",
     "different", "various", "existing", "well", "state", "art", "significantly", "respectively", "higher",
-    "compared", "following", "given", "number", "case", "order", "furthermore", "however", "therefore"
+    "compared", "following", "given", "number", "case", "order", "furthermore", "however", "therefore",
+    "abstract", "introduction", "conclusion", "references", "university", "department", "journal",
+    "volume", "review", "proceedings", "conference", "table", "fig", "also", "used", "discusses",
+    "gathered", "explored", "collected", "participants", "interview", "interviews", "students", "findings"
 }
 
 
@@ -34,48 +38,71 @@ class KeywordExtractor:
         if not text or len(text.strip()) < 30:
             return []
 
-        # Combine title (given higher weight by repeating) and main text
-        weighted_corpus = f"{title} {title} {text}"
+        # Split text into paragraphs or chunks to form a true multi-document corpus
+        raw_paragraphs = text.split("\n\n")
+        paragraphs = [p.strip() for p in raw_paragraphs if len(p.strip().split()) >= 8]
+
+        # If too few paragraphs, split by sentence groups
+        if len(paragraphs) < 3:
+            sentences = re.split(r"(?<=[.!?])\s+", text)
+            paragraphs = [" ".join(sentences[i:i+3]) for i in range(0, len(sentences), 3) if len(sentences[i:i+3]) > 0]
+
+        if not paragraphs:
+            paragraphs = [text]
+
+        # Add title as an emphasized document in corpus
+        if title:
+            paragraphs.append(title)
+            paragraphs.append(title)
 
         try:
             vectorizer = TfidfVectorizer(
                 stop_words="english",
                 ngram_range=(1, 3),
-                max_df=0.85,
+                max_df=0.95 if len(paragraphs) > 2 else 1.0,
                 min_df=1,
                 token_pattern=r"(?u)\b[a-zA-Z][a-zA-Z0-9_\-]{2,}\b"
             )
 
-            tfidf_matrix = vectorizer.fit_transform([weighted_corpus])
+            tfidf_matrix = vectorizer.fit_transform(paragraphs)
             feature_names = vectorizer.get_feature_names_out()
-            scores = tfidf_matrix.toarray()[0]
+
+            # Aggregate scores across paragraphs (sum of TF-IDF scores)
+            aggregated_scores = np.asarray(tfidf_matrix.sum(axis=0)).ravel()
+
+            # Max score for normalization
+            max_score = float(np.max(aggregated_scores)) if len(aggregated_scores) > 0 and np.max(aggregated_scores) > 0 else 1.0
 
             # Filter candidates
             candidates = []
-            for phrase, score in zip(feature_names, scores):
+            for phrase, raw_score in zip(feature_names, aggregated_scores):
                 words = phrase.split()
 
-                # Filter if all words are academic generic stopwords
-                if all(w in ACADEMIC_STOPWORDS for w in words):
+                # Filter if all words are academic generic stopwords or single characters
+                if all(w.lower() in ACADEMIC_STOPWORDS for w in words):
                     continue
-
-                # Filter single letter words or purely numeric tokens
                 if any(len(w) < 3 for w in words):
                     continue
+                # Skip if phrase starts or ends with a generic stopword
+                if words[0].lower() in ACADEMIC_STOPWORDS or words[-1].lower() in ACADEMIC_STOPWORDS:
+                    continue
 
-                # Boost multi-word keyphrases slightly as they are more informative (e.g. "convolutional neural network")
+                # Normalize score between 0.0 and 1.0
+                norm_score = float(raw_score / max_score)
+
+                # Boost multi-word keyphrases slightly as they are more informative (e.g. "language learning")
                 boost = 1.0
                 if len(words) == 2:
                     boost = 1.25
                 elif len(words) == 3:
-                    boost = 1.35
+                    boost = 1.4
 
-                final_score = float(score * boost)
+                final_score = round(min(1.0, norm_score * boost), 3)
                 phrase_type = "unigram" if len(words) == 1 else ("bigram" if len(words) == 2 else "trigram")
 
                 candidates.append({
                     "phrase": phrase.title(),
-                    "score": round(final_score, 4),
+                    "score": final_score,
                     "type": phrase_type,
                     "word_count": len(words)
                 })
@@ -89,14 +116,11 @@ class KeywordExtractor:
 
             for item in candidates:
                 p_lower = item["phrase"].lower()
-                # Check for direct overlap with already chosen
                 is_sub = False
                 for existing in seen_phrases:
                     if p_lower in existing or existing in p_lower:
-                        # Allow if score is close, otherwise skip redundant shorter variant
-                        if item["score"] < 0.7 * [x["score"] for x in deduped if x["phrase"].lower() == existing][0]:
-                            is_sub = True
-                            break
+                        is_sub = True
+                        break
                 if not is_sub and p_lower not in seen_phrases:
                     seen_phrases.add(p_lower)
                     deduped.append(item)
@@ -111,6 +135,10 @@ class KeywordExtractor:
             phrases = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b", text)
             counts = {}
             for p in phrases:
-                counts[p] = counts.get(p, 0) + 1
+                p_clean = p.strip()
+                words = p_clean.lower().split()
+                if any(w in ACADEMIC_STOPWORDS for w in words):
+                    continue
+                counts[p_clean] = counts.get(p_clean, 0) + 1
             sorted_p = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:self.top_n]
-            return [{"phrase": p, "score": 1.0, "type": "phrase"} for p, _ in sorted_p]
+            return [{"phrase": p, "score": 0.85, "type": "keyphrase"} for p, _ in sorted_p]

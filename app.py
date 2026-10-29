@@ -58,44 +58,43 @@ st.markdown("""
     }
     
     .metric-card {
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: rgba(125, 125, 125, 0.08);
+        border: 1px solid rgba(125, 125, 125, 0.2);
         border-radius: 10px;
         padding: 1.2rem;
         text-align: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         transition: transform 0.15s ease-in-out;
     }
     .metric-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.15);
     }
     .metric-card .val {
         font-size: 1.8rem;
         font-weight: 700;
-        color: #1e3a8a;
+        color: #3b82f6;
     }
     .metric-card .lbl {
         font-size: 0.85rem;
-        color: #64748b;
+        opacity: 0.8;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-top: 0.3rem;
     }
     
     .section-box {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
+        background: rgba(125, 125, 125, 0.06);
+        border: 1px solid rgba(125, 125, 125, 0.18);
         border-left: 4px solid #3b82f6;
         border-radius: 8px;
         padding: 1.2rem 1.5rem;
         margin-bottom: 1.2rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .section-title {
         font-size: 1.1rem;
         font-weight: 600;
-        color: #1e293b;
         margin-bottom: 0.6rem;
         display: flex;
         align-items: center;
@@ -103,9 +102,9 @@ st.markdown("""
     }
     .keyword-pill {
         display: inline-block;
-        background-color: #eff6ff;
-        color: #1d4ed8;
-        border: 1px solid #bfdbfe;
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.35);
         border-radius: 20px;
         padding: 0.35rem 0.85rem;
         margin: 0.25rem 0.3rem;
@@ -275,6 +274,9 @@ def main():
                         st.info(f"**Predicted Domain:** {classification['predicted_category']}")
                         st.caption(f"Inference Engine: *{classification['engine']}*")
 
+                        if classification.get("confidence", 0.0) < 0.25:
+                            st.warning(f"⚠️ **Low Confidence Match ({round(classification['confidence']*100, 1)}%):** This paper has interdisciplinary characteristics or originates outside the standard Computer Science domains.")
+
                         # Bar chart of top categories
                         all_scores = classification.get("all_scores", {})
                         if all_scores:
@@ -295,6 +297,8 @@ def main():
                                 yaxis={"autorange": "reversed"},
                                 height=280,
                                 margin=dict(l=0, r=20, t=20, b=20),
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                plot_bgcolor="rgba(0,0,0,0)",
                                 showlegend=False
                             )
                             fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
@@ -324,9 +328,9 @@ def main():
 
                     # Executive Summary Card
                     st.markdown(f"""
-                    <div class="section-box" style="border-left-color: #2563eb; background-color: #f0f7ff;">
+                    <div class="section-box" style="border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.08);">
                         <div class="section-title">📌 Executive Summary</div>
-                        <p style="font-size: 1.02rem; line-height: 1.6; color: #1e293b;">{summary['executive_summary']}</p>
+                        <p style="font-size: 1.02rem; line-height: 1.6;">{summary['executive_summary']}</p>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -337,14 +341,14 @@ def main():
                         st.markdown(f"""
                         <div class="section-box">
                             <div class="section-title">🎯 Problem Statement & Objectives</div>
-                            <p style="color: #334155; line-height: 1.55;">{summary['problem_statement']}</p>
+                            <p style="line-height: 1.55;">{summary['problem_statement']}</p>
                         </div>
                         """, unsafe_allow_html=True)
 
                         st.markdown(f"""
                         <div class="section-box">
                             <div class="section-title">📊 Key Experimental Findings</div>
-                            <p style="color: #334155; line-height: 1.55;">{summary['findings']}</p>
+                            <p style="line-height: 1.55;">{summary['findings']}</p>
                         </div>
                         """, unsafe_allow_html=True)
 
@@ -352,14 +356,14 @@ def main():
                         st.markdown(f"""
                         <div class="section-box">
                             <div class="section-title">⚙️ Proposed Methodology & Approach</div>
-                            <p style="color: #334155; line-height: 1.55;">{summary['methodology']}</p>
+                            <p style="line-height: 1.55;">{summary['methodology']}</p>
                         </div>
                         """, unsafe_allow_html=True)
 
                         st.markdown(f"""
                         <div class="section-box">
                             <div class="section-title">💡 Conclusion & Future Direction</div>
-                            <p style="color: #334155; line-height: 1.55;">{summary['conclusion']}</p>
+                            <p style="line-height: 1.55;">{summary['conclusion']}</p>
                         </div>
                         """, unsafe_allow_html=True)
 

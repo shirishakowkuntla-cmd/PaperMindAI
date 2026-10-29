@@ -204,29 +204,69 @@ class PDFExtractor:
         }
 
     def _detect_title(self, pages: List[Dict], full_text: str) -> str:
-        """Extract a plausible paper title from the first page."""
+        """Extract a clean, plausible paper title from the first page."""
         if not pages:
             return "Untitled Document"
 
         first_page = pages[0]["text"]
         lines = [l.strip() for l in first_page.split("\n") if l.strip()]
 
+        # Journal / Conference header patterns to skip
+        HEADER_SKIP_PATTERNS = [
+            r"(?i)^(the\s+)?.*?(review|journal|proceedings|transactions|bulletin|annals)\b",
+            r"(?i)^volume\s+\d+",
+            r"(?i)^vol\.\s*\d+",
+            r"(?i)^issue\s+\d+",
+            r"(?i)^issn[\s:\d\-]+",
+            r"(?i)^doi[\s:\d\.\/]+",
+            r"(?i)^research\s+paper$",
+            r"(?i)^original\s+article$",
+            r"(?i)^conference\s+paper$",
+            r"(?i)^full\s+paper$",
+            r"(?i)^international\s+conference\b",
+            r"(?i)^arxiv:\d+\.\d+",
+            r"(?i)^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}"
+        ]
+
+        # Author / Affiliation keywords to skip
+        AFFILIATION_PATTERNS = [
+            r"(?i)\b(university|department|faculty|institute|college|laboratory|school\s+of)\b",
+            r"(?i)\b(phd|professor|lecturer|researcher|postdoc|student)\b"
+        ]
+
         title_candidates = []
-        for line in lines[:8]:
-            # Stop if we hit abstract or common intro tokens
-            if re.match(r"(?i)^(abstract|keywords|introduction|arxiv:)", line):
+        for line in lines[:10]:
+            # Stop if we hit abstract, keywords, or intro
+            if re.match(r"(?i)^(abstract|keywords|1[\.\s]+introduction|introduction)\b", line):
                 break
+
             # Skip emails, URLs, dates, or very short tokens
             if "@" in line or "http" in line or len(line) < 4:
                 continue
+
+            # Skip journal headers
+            if any(re.search(pat, line) for pat in HEADER_SKIP_PATTERNS):
+                continue
+
+            # Skip affiliations or authors
+            if any(re.search(pat, line) for pat in AFFILIATION_PATTERNS):
+                if title_candidates:
+                    break
+                continue
+
             title_candidates.append(line)
-            if len(" ".join(title_candidates).split()) >= 15:
+
+            # A title is usually 5-25 words
+            combined_words = " ".join(title_candidates).split()
+            if len(combined_words) >= 12:
                 break
 
         if title_candidates:
-            raw_title = " ".join(title_candidates[:3])
-            # Truncate if unreasonably long
-            return raw_title[:200]
+            clean_title = " ".join(title_candidates)
+            # Remove any trailing colons or dashes
+            clean_title = re.sub(r"[\s:\-–—]+$", "", clean_title)
+            return clean_title[:220].strip()
+
         return "Untitled Document"
 
     def _parse_sections(self, full_text: str, pages: List[Dict]) -> Dict[str, str]:
