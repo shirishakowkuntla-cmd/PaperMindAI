@@ -6,6 +6,7 @@ using PyMuPDF (fitz) with automatic fallback to pypdf.
 
 import io
 import re
+import unicodedata
 from typing import Dict, List, Optional, Union, Tuple
 
 
@@ -57,15 +58,19 @@ class PDFExtractor:
     }
 
     def __init__(self):
-        self._fitz_available = self._check_fitz()
+        self._fitz_available = self._check_pymupdf()
 
     @staticmethod
-    def _check_fitz() -> bool:
+    def _check_pymupdf() -> bool:
         try:
-            import fitz
+            import pymupdf
             return True
         except ImportError:
-            return False
+            try:
+                import fitz
+                return True
+            except ImportError:
+                return False
 
     def extract_from_file(self, file_source: Union[str, bytes, io.BytesIO]) -> Dict:
         """
@@ -79,30 +84,38 @@ class PDFExtractor:
         """
         if self._fitz_available:
             try:
-                return self._extract_with_fitz(file_source)
+                return self._extract_with_pymupdf(file_source)
             except Exception as e:
-                # Fallback to pypdf if fitz fails on this file
+                # Fallback to pypdf if pymupdf fails on this file
                 return self._extract_with_pypdf(file_source, fallback_reason=str(e))
         else:
             return self._extract_with_pypdf(file_source)
 
-    def _extract_with_fitz(self, file_source: Union[str, bytes, io.BytesIO]) -> Dict:
-        """Primary extractor using PyMuPDF (fitz) for high accuracy."""
-        import fitz
+    def _extract_with_pymupdf(self, file_source: Union[str, bytes, io.BytesIO]) -> Dict:
+        """Primary extractor using PyMuPDF for high-fidelity vector text parsing."""
+        try:
+            import pymupdf
+        except ImportError:
+            import fitz as pymupdf
 
         if isinstance(file_source, (bytes, bytearray)):
-            doc = fitz.open(stream=file_source, filetype="pdf")
+            doc = pymupdf.open(stream=file_source, filetype="pdf")
         elif isinstance(file_source, io.BytesIO):
-            doc = fitz.open(stream=file_source.getvalue(), filetype="pdf")
+            doc = pymupdf.open(stream=file_source.getvalue(), filetype="pdf")
         else:
-            doc = fitz.open(file_source)
+            doc = pymupdf.open(file_source)
 
         page_texts = []
         num_pages = len(doc)
 
         for page_num in range(num_pages):
             page = doc[page_num]
-            text = page.get_text("text")
+            # Use sort=True to ensure logical reading order and avoid column interleaving
+            try:
+                text = page.get_text("text", sort=True)
+            except Exception:
+                text = page.get_text("text")
+
             cleaned = self._clean_text(text)
             if cleaned:
                 page_texts.append({"page_number": page_num + 1, "text": cleaned})
@@ -160,12 +173,16 @@ class PDFExtractor:
         }
 
     def _clean_text(self, text: str) -> str:
-        """Clean extracted text from common PDF artifacts."""
+        """Clean extracted text from common PDF artifacts and typographic ligatures."""
         if not text:
             return ""
 
+        # Normalize unicode ligatures (e.g. fi, fl, ffi) and special symbols
+        text = unicodedata.normalize("NFKD", text)
+
         # Normalize line breaks and tabs
-        text = text.replace("\r\n", "\n").replace("\r", "\n")
+        text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\xa0", " ")
+        text = text.replace("\u00ad", "")  # Remove soft hyphens
 
         # Fix hyphenated line breaks (e.g. "com-\nputer" -> "computer")
         text = re.sub(r"(\w+)-\n(\w+)", r"\1\2", text)
@@ -181,8 +198,8 @@ class PDFExtractor:
 
         text = "\n".join(cleaned_lines)
 
-        # Remove standalone page numbers or headers
-        text = re.sub(r"\n\s*\d+\s*\n", "\n\n", text)
+        # Remove standalone page numbers or running headers (e.g., "\n 12 \n", "\n Page 3 of 10 \n")
+        text = re.sub(r"(?i)\n\s*(?:page\s*)?\d+(?:\s*(?:of|\/)\s*\d+)?\s*\n", "\n\n", text)
         return text.strip()
 
     def _compute_metadata(self, full_text: str, num_pages: int, engine: str, fallback_reason: Optional[str] = None) -> Dict:

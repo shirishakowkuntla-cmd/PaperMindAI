@@ -10,14 +10,16 @@ import datetime
 def generate_markdown_report(paper_data: Dict) -> str:
     """Generates a downloadable Markdown academic briefing report."""
     title = paper_data.get("title", "Untitled Research Paper")
-    metadata = paper_data.get("metadata", {})
-    classification = paper_data.get("classification", {})
-    summary = paper_data.get("summary", {})
-    keywords = paper_data.get("keywords", [])
+    metadata = paper_data.get("metadata") or {}
+    classification = paper_data.get("classification") or {}
+    summary = paper_data.get("summary") or {}
+    keywords = paper_data.get("keywords") or []
 
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    kw_list = ", ".join([f"`{k['phrase']}`" for k in keywords[:10]])
+    kw_list = ", ".join([f"`{k['phrase']}`" for k in keywords[:10]]) if keywords else "None extracted"
+    wc = metadata.get("word_count")
+    wc_str = f"{wc:,} words" if isinstance(wc, (int, float)) else "N/A"
 
     md = f"""# PaperMind AI — Research Paper Intelligence Briefing
 
@@ -28,7 +30,7 @@ def generate_markdown_report(paper_data: Dict) -> str:
 
 ## 1. Document Metadata
 - **Total Pages:** {metadata.get('page_count', 'N/A')}
-- **Total Word Count:** {metadata.get('word_count', 'N/A'):,} words
+- **Total Word Count:** {wc_str}
 - **Estimated Reading Time:** ~{metadata.get('estimated_reading_time_mins', 'N/A')} minutes
 - **Extraction Engine:** {metadata.get('extractor_engine', 'PyMuPDF')}
 

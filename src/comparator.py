@@ -26,13 +26,15 @@ class PaperComparator:
         """
         # 1. Semantic Similarity Calculation
         similarity_score = self._compute_similarity(
-            paper_a.get("full_text", ""),
-            paper_b.get("full_text", "")
+            paper_a.get("full_text", "") or "",
+            paper_b.get("full_text", "") or ""
         )
 
         # 2. Keyword Venn Analysis
-        kw_a = {item["phrase"].lower(): item for item in paper_a.get("keywords", [])}
-        kw_b = {item["phrase"].lower(): item for item in paper_b.get("keywords", [])}
+        raw_kw_a = paper_a.get("keywords") or []
+        raw_kw_b = paper_b.get("keywords") or []
+        kw_a = {item["phrase"].lower(): item for item in raw_kw_a if isinstance(item, dict) and "phrase" in item}
+        kw_b = {item["phrase"].lower(): item for item in raw_kw_b if isinstance(item, dict) and "phrase" in item}
 
         shared_keywords = list(set(kw_a.keys()).intersection(set(kw_b.keys())))
         unique_a = [kw_a[k]["phrase"] for k in set(kw_a.keys()) - set(kw_b.keys())]
@@ -40,14 +42,21 @@ class PaperComparator:
         shared_phrases = [kw_a[k]["phrase"] for k in shared_keywords]
 
         # 3. Domain Alignment
-        domain_a = paper_a.get("classification", {}).get("predicted_category", "Unknown")
-        domain_b = paper_b.get("classification", {}).get("predicted_category", "Unknown")
+        cls_a = paper_a.get("classification") or {}
+        cls_b = paper_b.get("classification") or {}
+        domain_a = cls_a.get("predicted_category", "Unknown")
+        domain_b = cls_b.get("predicted_category", "Unknown")
         same_domain = (domain_a == domain_b) and (domain_a != "Unknown")
 
         # 4. Comparative Synthesis Verdict
         verdict = self._generate_verdict(
             domain_a, domain_b, same_domain, similarity_score, shared_phrases
         )
+
+        meta_a = paper_a.get("metadata") or {}
+        meta_b = paper_b.get("metadata") or {}
+        sum_a = paper_a.get("summary") or {}
+        sum_b = paper_b.get("summary") or {}
 
         return {
             "similarity_score": round(similarity_score * 100, 1),
@@ -60,36 +69,36 @@ class PaperComparator:
             "verdict": verdict,
             "paper_a_metrics": {
                 "title": paper_a.get("title", "Paper A"),
-                "pages": paper_a.get("metadata", {}).get("page_count", 0),
-                "words": paper_a.get("metadata", {}).get("word_count", 0),
-                "reading_time": paper_a.get("metadata", {}).get("estimated_reading_time_mins", 0),
+                "pages": meta_a.get("page_count", 0),
+                "words": meta_a.get("word_count", 0),
+                "reading_time": meta_a.get("estimated_reading_time_mins", 0),
             },
             "paper_b_metrics": {
                 "title": paper_b.get("title", "Paper B"),
-                "pages": paper_b.get("metadata", {}).get("page_count", 0),
-                "words": paper_b.get("metadata", {}).get("word_count", 0),
-                "reading_time": paper_b.get("metadata", {}).get("estimated_reading_time_mins", 0),
+                "pages": meta_b.get("page_count", 0),
+                "words": meta_b.get("word_count", 0),
+                "reading_time": meta_b.get("estimated_reading_time_mins", 0),
             },
             "section_comparison": {
                 "executive_summary": {
-                    "paper_a": paper_a.get("summary", {}).get("executive_summary", ""),
-                    "paper_b": paper_b.get("summary", {}).get("executive_summary", "")
+                    "paper_a": sum_a.get("executive_summary", ""),
+                    "paper_b": sum_b.get("executive_summary", "")
                 },
                 "problem_statement": {
-                    "paper_a": paper_a.get("summary", {}).get("problem_statement", ""),
-                    "paper_b": paper_b.get("summary", {}).get("problem_statement", "")
+                    "paper_a": sum_a.get("problem_statement", ""),
+                    "paper_b": sum_b.get("problem_statement", "")
                 },
                 "methodology": {
-                    "paper_a": paper_a.get("summary", {}).get("methodology", ""),
-                    "paper_b": paper_b.get("summary", {}).get("methodology", "")
+                    "paper_a": sum_a.get("methodology", ""),
+                    "paper_b": sum_b.get("methodology", "")
                 },
                 "findings": {
-                    "paper_a": paper_a.get("summary", {}).get("findings", ""),
-                    "paper_b": paper_b.get("summary", {}).get("findings", "")
+                    "paper_a": sum_a.get("findings", ""),
+                    "paper_b": sum_b.get("findings", "")
                 },
                 "conclusion": {
-                    "paper_a": paper_a.get("summary", {}).get("conclusion", ""),
-                    "paper_b": paper_b.get("summary", {}).get("conclusion", "")
+                    "paper_a": sum_a.get("conclusion", ""),
+                    "paper_b": sum_b.get("conclusion", "")
                 }
             }
         }

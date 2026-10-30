@@ -97,11 +97,15 @@ class PaperSummarizer:
         if self.pipeline is not None:
             try:
                 # Truncate tokens for model limit
-                truncated = " ".join(text.split()[:450])
+                words = text.split()
+                truncated = " ".join(words[:450])
+                num_words = len(truncated.split())
+                target_min = max(5, min(min_len, num_words - 2, max_len - 5))
+                target_max = max(target_min + 5, max_len)
                 res = self.pipeline(
                     truncated,
-                    max_length=max_len,
-                    min_length=min(min_len, len(truncated.split())),
+                    max_length=target_max,
+                    min_length=target_min,
                     do_sample=False
                 )
                 return res[0]["summary_text"].strip()
@@ -115,10 +119,41 @@ class PaperSummarizer:
         """
         Graph-based TextRank and Salience Sentence Extraction.
         Scores sentences based on word frequency, positioning, and academic cue phrases.
+        Protects academic abbreviations from false sentence splits and removes citation clutter.
         """
-        # Split into sentences
-        raw_sentences = re.split(r"(?<=[.!?])\s+", text)
-        sentences = [s.strip() for s in raw_sentences if len(s.strip().split()) >= 6]
+        # Protect common academic abbreviations from false sentence splits
+        cleaned = text
+        abbreviations = [
+            ("et al.", "et_al_dot"),
+            ("e.g.", "e_g_dot"),
+            ("i.e.", "i_e_dot"),
+            ("Fig.", "Fig_dot"),
+            ("fig.", "fig_dot"),
+            ("Eq.", "Eq_dot"),
+            ("eq.", "eq_dot"),
+            ("Tab.", "Tab_dot"),
+            ("Ref.", "Ref_dot"),
+            ("Vol.", "Vol_dot"),
+            ("No.", "No_dot"),
+            ("vs.", "vs_dot"),
+            ("Dr.", "Dr_dot"),
+            ("Prof.", "Prof_dot"),
+        ]
+        for abbr, token in abbreviations:
+            cleaned = cleaned.replace(abbr, token)
+
+        raw_sentences = re.split(r"(?<=[.!?])\s+", cleaned)
+        sentences = []
+        for s in raw_sentences:
+            for abbr, token in abbreviations:
+                s = s.replace(token, abbr)
+            s_clean = s.strip()
+            # Clean bracketed academic citations e.g. [1], [1, 2], [1-4]
+            s_clean = re.sub(r"\[\d+(?:[\s,–-]+\d+)*\]", "", s_clean)
+            # Normalize whitespace
+            s_clean = re.sub(r"\s+", " ", s_clean).strip()
+            if len(s_clean.split()) >= 6:
+                sentences.append(s_clean)
 
         if not sentences:
             return text[:400]

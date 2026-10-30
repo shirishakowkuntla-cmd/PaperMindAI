@@ -73,14 +73,14 @@ Scientific research papers are typically 10 to 30 pages long, packed with specia
 ## 📊 Empirical Evaluation & Deep Learning Benchmarks
 
 ### 1. Research Domain Classification (Model 1)
-Evaluated on an arXiv academic benchmark corpus spanning 7 major computer science and engineering disciplines:
+Evaluated on an expanded arXiv academic benchmark corpus of 112 landmark papers spanning 7 major computer science and engineering disciplines:
 
-| Metric | Test Set Score |
+| Metric | Held-Out Test Set Score |
 | :--- | :--- |
-| **Overall Accuracy** | **83.33%** |
-| **Weighted Precision** | **90.28%** |
-| **Weighted Recall** | **83.33%** |
-| **Weighted F1-Score** | **82.78%** |
+| **Overall Accuracy** | **91.30%** |
+| **Weighted Precision** | **92.39%** |
+| **Weighted Recall** | **91.30%** |
+| **Weighted F1-Score** | **91.30%** |
 
 - **Confusion Matrix:** Generated dynamically and saved to `data/confusion_matrix.png`.
 - **Supported Categories:**

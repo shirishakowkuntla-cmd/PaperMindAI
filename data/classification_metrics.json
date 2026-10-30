@@ -1,10 +1,10 @@
 {
-    "accuracy": 0.8333,
-    "precision": 0.9028,
-    "recall": 0.8333,
-    "f1_score": 0.8278,
-    "train_samples": 28,
-    "test_samples": 12,
+    "accuracy": 0.913,
+    "precision": 0.9239,
+    "recall": 0.913,
+    "f1_score": 0.913,
+    "train_samples": 103,
+    "test_samples": 23,
     "domains": [
         "Artificial Intelligence & Machine Learning",
         "Computer Vision & Pattern Recognition",
@@ -19,56 +19,56 @@
             "precision": 1.0,
             "recall": 1.0,
             "f1-score": 1.0,
-            "support": 2.0
+            "support": 3.0
         },
         "Computer Vision & Pattern Recognition": {
             "precision": 1.0,
-            "recall": 0.5,
-            "f1-score": 0.6666666666666666,
-            "support": 2.0
+            "recall": 0.75,
+            "f1-score": 0.8571428571428571,
+            "support": 4.0
         },
         "Cybersecurity & Cryptography": {
-            "precision": 1.0,
-            "recall": 0.5,
+            "precision": 0.6666666666666666,
+            "recall": 0.6666666666666666,
             "f1-score": 0.6666666666666666,
-            "support": 2.0
+            "support": 3.0
         },
         "Data Science & Big Data Analytics": {
             "precision": 1.0,
             "recall": 1.0,
             "f1-score": 1.0,
-            "support": 2.0
+            "support": 3.0
         },
         "Natural Language Processing (NLP)": {
-            "precision": 0.6666666666666666,
+            "precision": 0.75,
             "recall": 1.0,
-            "f1-score": 0.8,
-            "support": 2.0
+            "f1-score": 0.8571428571428571,
+            "support": 3.0
         },
         "Networks & Distributed Computing": {
-            "precision": 0.5,
+            "precision": 1.0,
             "recall": 1.0,
-            "f1-score": 0.6666666666666666,
-            "support": 1.0
+            "f1-score": 1.0,
+            "support": 4.0
         },
         "Robotics & Autonomous Systems": {
             "precision": 1.0,
             "recall": 1.0,
             "f1-score": 1.0,
-            "support": 1.0
+            "support": 3.0
         },
-        "accuracy": 0.8333333333333334,
+        "accuracy": 0.9130434782608695,
         "macro avg": {
-            "precision": 0.880952380952381,
-            "recall": 0.8571428571428571,
-            "f1-score": 0.8285714285714285,
-            "support": 12.0
+            "precision": 0.9166666666666666,
+            "recall": 0.9166666666666666,
+            "f1-score": 0.91156462585034,
+            "support": 23.0
         },
         "weighted avg": {
-            "precision": 0.9027777777777778,
-            "recall": 0.8333333333333334,
-            "f1-score": 0.8277777777777776,
-            "support": 12.0
+            "precision": 0.9239130434782609,
+            "recall": 0.9130434782608695,
+            "f1-score": 0.9130434782608695,
+            "support": 23.0
         }
     }
 }

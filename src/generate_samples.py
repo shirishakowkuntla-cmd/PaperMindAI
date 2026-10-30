@@ -4,7 +4,10 @@ Generates genuine academic PDF samples for immediate testing in PaperMind AI.
 """
 
 import os
-import fitz
+try:
+    import pymupdf as fitz
+except ImportError:
+    import fitz
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sample_papers")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
